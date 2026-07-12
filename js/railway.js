@@ -8,12 +8,13 @@ export function addRailwayStations(root, neonMaterials, streetLights) {
   const stations = [
     { x: -15, z: -85, rot: 0, name: '渋谷駅' },
     { x: 55, z: -70, rot: -0.4, name: 'JR出口' },
+    { x: 20, z: -95, rot: 0.15, name: '地下鉄入口' },
   ];
   const stationZones = [];
 
   for (const s of stations) {
     buildStationExterior(root, s, neonMaterials, streetLights);
-    stationZones.push({ x: s.x, z: s.z, radius: 8, name: s.name });
+    stationZones.push({ x: s.x, z: s.z, radius: 9, name: s.name });
   }
 
   // Elevated track ribbon across south side
@@ -29,41 +30,77 @@ function buildStationExterior(root, s, neonMaterials, streetLights) {
 
   // Main station hall block
   const hall = new THREE.Mesh(
-    new THREE.BoxGeometry(22, 9, 14),
+    new THREE.BoxGeometry(24, 10, 16),
     new THREE.MeshStandardMaterial({
       color: 0xc8d0d8,
-      roughness: 0.55,
-      metalness: 0.25,
+      roughness: 0.48,
+      metalness: 0.28,
     })
   );
-  hall.position.y = 4.5;
+  hall.position.y = 5;
   hall.castShadow = true;
+  hall.receiveShadow = true;
   g.add(hall);
+
+  // Side wings
+  for (const sx of [-14, 14]) {
+    const wing = new THREE.Mesh(
+      new THREE.BoxGeometry(8, 7, 10),
+      new THREE.MeshStandardMaterial({ color: 0xb0b8c0, roughness: 0.55, metalness: 0.2 })
+    );
+    wing.position.set(sx, 3.5, -1);
+    wing.castShadow = true;
+    g.add(wing);
+  }
 
   // Glass curtain wall
   const glass = new THREE.Mesh(
-    new THREE.PlaneGeometry(18, 6),
+    new THREE.PlaneGeometry(20, 7),
     new THREE.MeshStandardMaterial({
       color: 0x88aacc,
       emissive: 0x446688,
-      emissiveIntensity: 0.25,
+      emissiveIntensity: 0.35,
       transparent: true,
-      opacity: 0.75,
-      metalness: 0.6,
-      roughness: 0.2,
+      opacity: 0.72,
+      metalness: 0.65,
+      roughness: 0.15,
     })
   );
-  glass.position.set(0, 3.5, 7.05);
+  glass.position.set(0, 4, 8.1);
   g.add(glass);
-  neonMaterials.push({ mat: glass.material, base: 0.25 });
+  neonMaterials.push({ mat: glass.material, base: 0.35 });
+
+  // Glass mullions
+  for (let i = -4; i <= 4; i++) {
+    const m = new THREE.Mesh(
+      new THREE.BoxGeometry(0.12, 7, 0.08),
+      new THREE.MeshStandardMaterial({ color: 0x3a4550, metalness: 0.6, roughness: 0.4 })
+    );
+    m.position.set(i * 2.2, 4, 8.15);
+    g.add(m);
+  }
 
   // Entrance canopy
   const canopy = new THREE.Mesh(
-    new THREE.BoxGeometry(16, 0.35, 5),
-    new THREE.MeshStandardMaterial({ color: 0x2a3040, metalness: 0.4, roughness: 0.5 })
+    new THREE.BoxGeometry(18, 0.4, 6),
+    new THREE.MeshStandardMaterial({ color: 0x2a3040, metalness: 0.45, roughness: 0.45 })
   );
-  canopy.position.set(0, 4.2, 9);
+  canopy.position.set(0, 4.5, 10);
   g.add(canopy);
+  // Canopy underside lights
+  for (const lx of [-5, 0, 5]) {
+    const cl = new THREE.Mesh(
+      new THREE.BoxGeometry(1.5, 0.08, 0.4),
+      new THREE.MeshStandardMaterial({
+        color: 0xfff0d0,
+        emissive: 0xffe0a0,
+        emissiveIntensity: 0.7,
+      })
+    );
+    cl.position.set(lx, 4.25, 10);
+    g.add(cl);
+    neonMaterials.push({ mat: cl.material, base: 0.7 });
+  }
 
   // Canopy pillars
   for (const x of [-6, 6]) {

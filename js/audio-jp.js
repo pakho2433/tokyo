@@ -143,37 +143,46 @@ export class TokyoAudio {
     const t = this.ctx.currentTime;
 
     if (brand === 'familymart') {
-      // Bright rising electronic welcome (green-store vibe)
+      // Bright rising electronic welcome (green-store vibe, longer phrase)
       const notes = [
-        { f: 659.25, d: 0.1, o: 0, g: 0.13 },
-        { f: 783.99, d: 0.1, o: 0.1, g: 0.13 },
-        { f: 987.77, d: 0.12, o: 0.2, g: 0.14 },
-        { f: 1174.66, d: 0.16, o: 0.34, g: 0.15 },
-        { f: 1318.51, d: 0.22, o: 0.52, g: 0.12 },
-        { f: 1567.98, d: 0.28, o: 0.72, g: 0.1 },
+        { f: 659.25, d: 0.11, o: 0, g: 0.14 },
+        { f: 783.99, d: 0.11, o: 0.11, g: 0.14 },
+        { f: 987.77, d: 0.13, o: 0.22, g: 0.15 },
+        { f: 1174.66, d: 0.15, o: 0.36, g: 0.16 },
+        { f: 1318.51, d: 0.2, o: 0.54, g: 0.14 },
+        { f: 1567.98, d: 0.26, o: 0.76, g: 0.12 },
+        { f: 1318.51, d: 0.18, o: 1.05, g: 0.1 },
+        { f: 1760.0, d: 0.32, o: 1.25, g: 0.09 },
       ];
       notes.forEach((n) => {
         this._beep(n.f, n.d, t + n.o, n.g, 'triangle');
-        this._beep(n.f * 2, n.d * 0.5, t + n.o, n.g * 0.25, 'sine');
+        this._beep(n.f * 2, n.d * 0.45, t + n.o, n.g * 0.28, 'sine');
       });
+      // Soft store BGM pad
+      this._beep(392, 1.6, t + 0.1, 0.03, 'sine');
+      this._beep(523.25, 1.6, t + 0.1, 0.025, 'sine');
     } else if (brand === 'seven') {
-      // Two-tone classic door sensor + sparkle
-      this._beep(880, 0.18, t, 0.16, 'square');
-      this._beep(1174.7, 0.22, t + 0.16, 0.14, 'square');
-      this._beep(1318.5, 0.14, t + 0.38, 0.1, 'triangle');
-      this._beep(1760, 0.2, t + 0.5, 0.08, 'sine');
-      // Soft store bed
-      this._beep(440, 0.6, t + 0.05, 0.04, 'sine');
+      // Classic two-tone door sensor + sparkle cascade
+      this._beep(880, 0.2, t, 0.17, 'square');
+      this._beep(1174.7, 0.24, t + 0.18, 0.15, 'square');
+      this._beep(1318.5, 0.16, t + 0.42, 0.11, 'triangle');
+      this._beep(1568, 0.14, t + 0.56, 0.09, 'triangle');
+      this._beep(1760, 0.22, t + 0.7, 0.08, 'sine');
+      this._beep(440, 0.8, t + 0.05, 0.045, 'sine');
+      this._beep(554.37, 0.8, t + 0.05, 0.03, 'sine');
     } else {
       // Lawson-ish cool blue arpeggio
-      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
-        this._beep(f, 0.14, t + i * 0.11, 0.12, 'triangle');
+      [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => {
+        this._beep(f, 0.15, t + i * 0.12, 0.13, 'triangle');
+        this._beep(f * 2, 0.08, t + i * 0.12, 0.04, 'sine');
       });
-      this._beep(1318.5, 0.3, t + 0.5, 0.09, 'sine');
+      this._beep(1568, 0.35, t + 0.65, 0.09, 'sine');
+      this._beep(392, 1.2, t + 0.05, 0.03, 'sine');
     }
 
-    // Door whoosh
-    this._noiseBurst(0.12, 0.06, t, 1800);
+    // Automatic door whoosh + chime tail
+    this._noiseBurst(0.14, 0.07, t, 1800);
+    this._noiseBurst(0.1, 0.04, t + 0.08, 900);
   }
 
   /** @deprecated use playKonbiniEnter */
@@ -211,34 +220,46 @@ export class TokyoAudio {
     this._lastTrainArrive = now;
     const t = this.ctx.currentTime;
 
-    // Attention chimes
+    // Station melody (オリジナル・発車メロディ風)
     const melody = [
-      { f: 784, o: 0 },
-      { f: 880, o: 0.18 },
-      { f: 988, o: 0.36 },
-      { f: 1175, o: 0.54 },
-      { f: 988, o: 0.78 },
-      { f: 880, o: 0.96 },
-      { f: 784, o: 1.14 },
-      { f: 659, o: 1.4 },
+      { f: 659.25, o: 0, d: 0.22 },
+      { f: 783.99, o: 0.22, d: 0.22 },
+      { f: 987.77, o: 0.44, d: 0.22 },
+      { f: 1174.66, o: 0.66, d: 0.28 },
+      { f: 987.77, o: 1.0, d: 0.22 },
+      { f: 880.0, o: 1.22, d: 0.22 },
+      { f: 783.99, o: 1.44, d: 0.22 },
+      { f: 659.25, o: 1.7, d: 0.35 },
+      { f: 523.25, o: 2.1, d: 0.4 },
     ];
     melody.forEach((n) => {
-      this._beep(n.f, 0.2, t + n.o, 0.11, 'sine');
-      this._beep(n.f * 2, 0.12, t + n.o, 0.03, 'triangle');
+      this._beep(n.f, n.d, t + n.o, 0.12, 'sine');
+      this._beep(n.f * 2, n.d * 0.55, t + n.o, 0.035, 'triangle');
     });
+    // Bell accent
+    this._beep(1568, 0.15, t + 0.05, 0.08, 'triangle');
+    this._beep(1568, 0.15, t + 0.35, 0.06, 'triangle');
 
-    // Low rumble of train
-    setTimeout(() => this._trainRumble(1.8), 400);
+    setTimeout(() => this._trainRumble(2.4), 300);
+    // Approaching announcement
+    setTimeout(() => {
+      this.speakJapanese('まもなく電車がまいります。黄色い線までお下がりください。', {
+        rate: 0.9,
+        pitch: 1.02,
+      });
+    }, 900);
   }
 
   playTrainArrival() {
     if (!this.ctx || this.muted) return;
     const t = this.ctx.currentTime;
-    // Door open ding-dong
-    this._beep(1046.5, 0.25, t, 0.14, 'sine');
-    this._beep(1318.5, 0.35, t + 0.28, 0.12, 'sine');
-    this._noiseBurst(0.35, 0.05, t + 0.1, 600);
-    this._trainRumble(0.8);
+    // Door open ding-dong + air hiss
+    this._beep(1046.5, 0.28, t, 0.15, 'sine');
+    this._beep(1318.5, 0.38, t + 0.3, 0.13, 'sine');
+    this._beep(1568, 0.2, t + 0.65, 0.08, 'triangle');
+    this._noiseBurst(0.4, 0.06, t + 0.1, 550);
+    this._noiseBurst(0.25, 0.04, t + 0.45, 1200);
+    this._trainRumble(1.0);
   }
 
   _trainRumble(duration = 1.5) {
@@ -296,28 +317,30 @@ export class TokyoAudio {
     this.playTrainArrival();
     // Familiar Japanese platform reminder style (generic wording)
     const lines = [
-      `まもなく、1番線に、各駅停車、がまいります。危ないですから、黄色い線まで、お下がりください。`,
-      `${stationName}、${stationName}。お出口は、左側です。`,
-      `電車がまいります。ご注意ください。`,
+      `まもなく、1番線に、各駅停車、山手線、がまいります。危ないですから、黄色い線まで、お下がりください。`,
+      `${stationName}、${stationName}。お出口は、左側です。お忘れ物ございませんよう、ご注意ください。`,
+      `電車がまいります。ドアが開きます。ご注意ください。`,
+      `1番線に、電車が到着いたします。かけ込み乗車は、おやめください。`,
     ];
     const line = lines[Math.floor(Math.random() * lines.length)];
-    setTimeout(() => this.speakJapanese(line, { rate: 0.92 }), 600);
+    setTimeout(() => this.speakJapanese(line, { rate: 0.9, pitch: 1.02 }), 500);
   }
 
   announceEnterStation(stationName = '渋谷') {
     this.playAttentionChime();
-    this.speakJapanese(`${stationName}駅です。ご利用くださいまして、ありがとうございます。`, {
-      rate: 0.95,
-    });
+    this.speakJapanese(
+      `${stationName}駅です。ご利用くださいまして、ありがとうございます。ホームは直進です。`,
+      { rate: 0.94 }
+    );
   }
 
   announceKonbiniWelcome(brand = 'familymart') {
     const map = {
       familymart: 'いらっしゃいませ。',
-      seven: 'いらっしゃいませ。',
+      seven: 'いらっしゃいませ。こんにちは。',
       lawson: 'いらっしゃいませ。',
     };
-    this.speakJapanese(map[brand] || map.familymart, { rate: 1.05, pitch: 1.1 });
+    this.speakJapanese(map[brand] || map.familymart, { rate: 1.05, pitch: 1.12 });
   }
 
   /**

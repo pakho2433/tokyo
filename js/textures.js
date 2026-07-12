@@ -38,11 +38,11 @@ function noiseFill(ctx, W, H, seed, amount = 10) {
 /** Dense Japanese commercial mid-rise facade (人中之龍-style clutter) */
 export function facadeTexture(seed = 0, opts = {}) {
   const night = opts.tone === 'night';
-  const key = `f-yakuza-${seed}-${night ? 'n' : 'd'}-v2`;
+  const key = `f-yakuza-${seed}-${night ? 'n' : 'd'}-v4`;
   if (cache.has(key)) return cache.get(key);
 
-  const W = 512;
-  const H = 1024;
+  const W = 768;
+  const H = 1536;
   const canvas = makeCanvas(W, H);
   const ctx = canvas.getContext('2d');
   const rnd = mulberry32(seed * 9973 + 17);
@@ -69,9 +69,9 @@ export function facadeTexture(seed = 0, opts = {}) {
   ctx.fillStyle = `rgb(${r},${g},${b})`;
   ctx.fillRect(0, 0, W, H);
 
-  // Tile / panel cladding
-  const panelH = 14 + (seed % 10);
-  ctx.strokeStyle = 'rgba(0,0,0,0.10)';
+  // Tile / panel cladding (finer grain for Yakuza density)
+  const panelH = 10 + (seed % 8);
+  ctx.strokeStyle = 'rgba(0,0,0,0.12)';
   ctx.lineWidth = 1;
   for (let y = 0; y < H; y += panelH) {
     ctx.beginPath();
@@ -79,7 +79,7 @@ export function facadeTexture(seed = 0, opts = {}) {
     ctx.lineTo(W, y);
     ctx.stroke();
   }
-  const panelW = 28 + (seed % 20);
+  const panelW = 22 + (seed % 16);
   for (let x = 0; x < W; x += panelW) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
@@ -87,26 +87,50 @@ export function facadeTexture(seed = 0, opts = {}) {
     ctx.stroke();
   }
 
+  // Weathered streaks / rain trails
+  ctx.strokeStyle = 'rgba(40,45,50,0.08)';
+  for (let i = 0; i < 18; i++) {
+    const sx = (rnd() * W) | 0;
+    ctx.beginPath();
+    ctx.moveTo(sx, 0);
+    ctx.lineTo(sx + (rnd() - 0.5) * 8, H);
+    ctx.stroke();
+  }
+
   // Subtle vertical seams / expansion joints
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-  for (let x = 40; x < W; x += 80 + (seed % 30)) {
+  ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+  for (let x = 40; x < W; x += 70 + (seed % 28)) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
     ctx.lineTo(x, H);
     ctx.stroke();
   }
 
-  noiseFill(ctx, W, H, seed, 8);
+  // Pipe / conduit runs (classic JP mid-rise detail)
+  ctx.strokeStyle = 'rgba(90,98,108,0.55)';
+  ctx.lineWidth = 3;
+  for (let i = 0; i < 3; i++) {
+    const px = 20 + ((seed + i * 41) % (W - 40));
+    ctx.beginPath();
+    ctx.moveTo(px, 0);
+    ctx.lineTo(px, H);
+    ctx.stroke();
+    // pipe clamps
+    ctx.fillStyle = 'rgba(60,66,74,0.7)';
+    for (let y = 40; y < H; y += 90) ctx.fillRect(px - 4, y, 8, 6);
+  }
 
-  const floors = 14 + (seed % 10);
-  const cols = 6 + (seed % 5);
-  const marginX = 12;
-  const marginY = 18;
+  noiseFill(ctx, W, H, seed, 10);
+
+  const floors = 16 + (seed % 12);
+  const cols = 7 + (seed % 5);
+  const marginX = 14;
+  const marginY = 22;
   const floorH = (H - marginY * 2) / floors;
   const colW = (W - marginX * 2) / cols;
-  const winPadX = 3 + (seed % 3);
-  const winPadY = 3 + (seed % 2);
-  const litChance = night ? 68 : 38;
+  const winPadX = 2 + (seed % 3);
+  const winPadY = 2 + (seed % 2);
+  const litChance = night ? 72 : 42;
 
   for (let fy = 0; fy < floors; fy++) {
     // Floor ledge
@@ -115,13 +139,30 @@ export function facadeTexture(seed = 0, opts = {}) {
     ctx.fillStyle = 'rgba(255,255,255,0.05)';
     ctx.fillRect(0, marginY + fy * floorH + 2, W, 1);
 
-    // AC units on some floors
-    if ((seed + fy) % 4 === 0) {
+    // AC units on some floors (dense like Kamurocho)
+    if ((seed + fy) % 3 === 0) {
       const acX = marginX + ((seed + fy * 3) % cols) * colW + 4;
       ctx.fillStyle = '#6a7078';
-      ctx.fillRect(acX, marginY + fy * floorH + 4, 18, 10);
+      ctx.fillRect(acX, marginY + fy * floorH + 3, 22, 12);
       ctx.fillStyle = '#4a5058';
-      ctx.fillRect(acX + 2, marginY + fy * floorH + 6, 14, 3);
+      ctx.fillRect(acX + 2, marginY + fy * floorH + 5, 18, 3);
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.fillRect(acX + 3, marginY + fy * floorH + 9, 16, 2);
+      // vent grille
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      for (let g = 0; g < 4; g++) {
+        ctx.fillRect(acX + 4 + g * 4, marginY + fy * floorH + 6, 2, 4);
+      }
+    }
+
+    // Balcony rail strip
+    if ((seed + fy) % 5 === 0) {
+      ctx.fillStyle = 'rgba(30,34,40,0.55)';
+      ctx.fillRect(marginX, marginY + fy * floorH + floorH - 5, W - marginX * 2, 3);
+      ctx.fillStyle = 'rgba(180,190,200,0.25)';
+      for (let rx = marginX; rx < W - marginX; rx += 10) {
+        ctx.fillRect(rx, marginY + fy * floorH + floorH - 12, 2, 10);
+      }
     }
 
     for (let cx = 0; cx < cols; cx++) {
@@ -131,41 +172,54 @@ export function facadeTexture(seed = 0, opts = {}) {
       const ww = colW - winPadX * 2;
       const wh = floorH - winPadY * 2 - 3;
 
-      // Window frame (aluminum)
-      ctx.fillStyle = 'rgba(55,62,72,0.85)';
-      ctx.fillRect(wx - 1.5, wy - 1.5, ww + 3, wh + 3);
+      // Window frame (aluminum + depth)
+      ctx.fillStyle = 'rgba(45,52,62,0.92)';
+      ctx.fillRect(wx - 2, wy - 2, ww + 4, wh + 4);
+      ctx.fillStyle = 'rgba(120,130,140,0.35)';
+      ctx.fillRect(wx - 1, wy - 1, ww + 2, 1.5);
 
       if (lit) {
         const warm = (seed + fy + cx) % 3 === 0;
-        const gr = warm ? 255 : 210;
-        const gg = warm ? 228 : 242;
-        const gb = warm ? 155 : 255;
-        const alpha = night ? 0.9 : 0.55 + ((seed + fy * cx) % 25) / 100;
+        const cool = (seed + fy + cx) % 5 === 0;
+        const gr = warm ? 255 : cool ? 180 : 210;
+        const gg = warm ? 228 : cool ? 220 : 242;
+        const gb = warm ? 155 : cool ? 255 : 255;
+        const alpha = night ? 0.92 : 0.58 + ((seed + fy * cx) % 25) / 100;
         ctx.fillStyle = `rgba(${gr},${gg},${gb},${alpha})`;
       } else {
-        const dark = night ? 16 : 52;
-        ctx.fillStyle = `rgba(${dark + 8},${dark + 16},${dark + 30},0.9)`;
+        const dark = night ? 14 : 48;
+        ctx.fillStyle = `rgba(${dark + 6},${dark + 14},${dark + 28},0.92)`;
       }
       ctx.fillRect(wx, wy, ww, wh);
 
-      // Curtain / blinds detail
-      if (!lit && (seed + fy + cx) % 5 === 0) {
-        ctx.fillStyle = 'rgba(80,70,90,0.35)';
-        ctx.fillRect(wx, wy, ww * 0.45, wh);
+      // Interior silhouette when lit (desk / figure block)
+      if (lit && (seed + fy + cx) % 6 === 0) {
+        ctx.fillStyle = 'rgba(40,30,20,0.28)';
+        ctx.fillRect(wx + ww * 0.15, wy + wh * 0.45, ww * 0.7, wh * 0.5);
       }
-      if (lit && (seed + cx) % 4 === 0) {
-        ctx.fillStyle = 'rgba(40,30,20,0.2)';
-        for (let by = 0; by < wh; by += 3) {
+
+      // Curtain / blinds detail
+      if (!lit && (seed + fy + cx) % 4 === 0) {
+        ctx.fillStyle = 'rgba(80,70,90,0.4)';
+        ctx.fillRect(wx, wy, ww * 0.48, wh);
+      }
+      if (lit && (seed + cx) % 3 === 0) {
+        ctx.fillStyle = 'rgba(40,30,20,0.22)';
+        for (let by = 0; by < wh; by += 2.5) {
           ctx.fillRect(wx, wy + by, ww, 1);
         }
       }
 
-      if (ww > 16) {
-        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      // Glass reflection streak
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      ctx.fillRect(wx + 2, wy + 2, ww * 0.22, wh - 4);
+
+      if (ww > 14) {
+        ctx.fillStyle = 'rgba(0,0,0,0.24)';
         ctx.fillRect(wx + ww * 0.5 - 0.5, wy, 1, wh);
       }
-      if (wh > 20 && (seed + fy) % 3 === 0) {
-        ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      if (wh > 16 && (seed + fy) % 3 === 0) {
+        ctx.fillStyle = 'rgba(0,0,0,0.16)';
         ctx.fillRect(wx, wy + wh * 0.5, ww, 1);
       }
     }
@@ -219,7 +273,7 @@ export function facadeTexture(seed = 0, opts = {}) {
     }
   }
 
-  // Multi-layer kanban strip (看板 clutter)
+  // Multi-layer kanban strip (看板 clutter — Kamurocho density)
   const signColors = [
     ['#e63946', '#fff'],
     ['#1d3557', '#f1faee'],
@@ -231,12 +285,16 @@ export function facadeTexture(seed = 0, opts = {}) {
     ['#3a0ca3', '#f72585'],
     ['#ff9f1c', '#1a0a00'],
     ['#2ec4b6', '#00332e'],
+    ['#ffbe0b', '#1a1000'],
+    ['#7209b7', '#fff'],
   ];
   const sc = signColors[seed % signColors.length];
   ctx.fillStyle = sc[0];
-  ctx.fillRect(2, shopY + 2, W - 4, 16);
+  ctx.fillRect(2, shopY + 2, W - 4, 20);
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.fillRect(2, shopY + 2, W - 4, 3);
   ctx.fillStyle = sc[1];
-  ctx.font = 'bold 13px "Hiragino Sans","Noto Sans JP",sans-serif';
+  ctx.font = 'bold 16px "Hiragino Sans","Noto Sans JP",sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   const shopNames = [
@@ -256,35 +314,77 @@ export function facadeTexture(seed = 0, opts = {}) {
     '洋服',
     '中華',
     '定食',
+    '雀荘',
+    'ネットカフェ',
+    '立ち飲み',
+    '串カツ',
+    'うどん',
+    'たい焼き',
   ];
-  ctx.fillText(shopNames[seed % shopNames.length], W / 2, shopY + 10);
+  ctx.fillText(shopNames[seed % shopNames.length], W / 2, shopY + 12);
 
-  // Secondary hanging signs
+  // Second sign band
+  const sc3 = signColors[(seed + 5) % signColors.length];
+  ctx.fillStyle = sc3[0];
+  ctx.fillRect(4, shopY + 24, W * 0.42, 14);
+  ctx.fillStyle = sc3[1];
+  ctx.font = 'bold 11px sans-serif';
+  ctx.fillText(shopNames[(seed + 2) % shopNames.length], 4 + W * 0.21, shopY + 31);
+
+  // Secondary hanging signs (stacked)
   if (seed % 2 === 0) {
     const sc2 = signColors[(seed + 3) % signColors.length];
     ctx.fillStyle = sc2[0];
-    ctx.fillRect(W - 48, shopY - 80, 36, 72);
+    ctx.fillRect(W - 56, shopY - 100, 42, 90);
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.strokeRect(W - 54, shopY - 98, 38, 86);
     ctx.fillStyle = sc2[1];
+    ctx.font = 'bold 16px sans-serif';
+    const chars = [...shopNames[(seed + 1) % shopNames.length]].slice(0, 4);
+    chars.forEach((ch, i) => ctx.fillText(ch, W - 35, shopY - 80 + i * 20));
+  }
+  // Left hanging sign
+  if (seed % 3 !== 1) {
+    const scL = signColors[(seed + 7) % signColors.length];
+    ctx.fillStyle = scL[0];
+    ctx.fillRect(8, shopY - 70, 32, 64);
+    ctx.fillStyle = scL[1];
     ctx.font = 'bold 14px sans-serif';
-    const chars = [...shopNames[(seed + 1) % shopNames.length]].slice(0, 3);
-    chars.forEach((ch, i) => ctx.fillText(ch, W - 30, shopY - 62 + i * 20));
+    const charsL = [...shopNames[(seed + 4) % shopNames.length]].slice(0, 3);
+    charsL.forEach((ch, i) => ctx.fillText(ch, 24, shopY - 52 + i * 18));
   }
 
   // Awning / noren
   if (seed % 3 !== 2) {
-    ctx.fillStyle = sc[0];
-    for (let i = 0; i < 8; i++) {
-      ctx.fillRect(6 + i * 62, shopY + 18, 48, 8);
-      ctx.fillStyle = i % 2 === 0 ? sc[0] : 'rgba(0,0,0,0.2)';
-      ctx.fillRect(6 + i * 62, shopY + 18, 48, 8);
+    for (let i = 0; i < 10; i++) {
+      ctx.fillStyle = i % 2 === 0 ? sc[0] : 'rgba(0,0,0,0.22)';
+      ctx.fillRect(6 + i * 76, shopY + 40, 60, 12);
     }
   }
 
+  // Poster stickers on wall above shops
+  for (let i = 0; i < 5; i++) {
+    const pc = signColors[(seed + i * 2) % signColors.length];
+    ctx.fillStyle = pc[0];
+    const px = 20 + i * 140 + (seed % 20);
+    const py = shopY - 40 - (i % 2) * 12;
+    ctx.fillRect(px, py, 48, 32);
+    ctx.fillStyle = pc[1];
+    ctx.font = 'bold 10px sans-serif';
+    ctx.fillText('OPEN', px + 24, py + 16);
+  }
+
   // Roof edge detail at top
-  ctx.fillStyle = 'rgba(40,44,50,0.85)';
-  ctx.fillRect(0, 0, W, 10);
-  ctx.fillStyle = 'rgba(80,88,96,0.5)';
-  ctx.fillRect(0, 10, W, 4);
+  ctx.fillStyle = 'rgba(40,44,50,0.9)';
+  ctx.fillRect(0, 0, W, 14);
+  ctx.fillStyle = 'rgba(80,88,96,0.55)';
+  ctx.fillRect(0, 14, W, 5);
+  // Antenna / water tank silhouette
+  ctx.fillStyle = 'rgba(70,76,84,0.85)';
+  ctx.fillRect(W * 0.7, 2, 8, 18);
+  ctx.beginPath();
+  ctx.arc(W * 0.35, 10, 14, 0, Math.PI * 2);
+  ctx.fill();
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
@@ -298,13 +398,30 @@ export function facadeTexture(seed = 0, opts = {}) {
 export function verticalSignTexture(seed = 0, text) {
   const labels = text
     ? [text]
-    : ['焼肉', 'ラーメン', '居酒屋', 'カラオケ', '薬局', '寿司', 'ホテル', 'ゲーム', 'パチスロ', '弁当', '酒', '美容'];
+    : [
+        '焼肉',
+        'ラーメン',
+        '居酒屋',
+        'カラオケ',
+        '薬局',
+        '寿司',
+        'ホテル',
+        'ゲーム',
+        'パチスロ',
+        '弁当',
+        '酒',
+        '美容',
+        '雀荘',
+        '立ち飲み',
+        '串カツ',
+        'ネット',
+      ];
   const label = labels[seed % labels.length];
-  const key = `vsign-${seed}-${label}-v2`;
+  const key = `vsign-${seed}-${label}-v3`;
   if (cache.has(key)) return cache.get(key);
 
-  const W = 96;
-  const H = 384;
+  const W = 128;
+  const H = 512;
   const canvas = makeCanvas(W, H);
   const ctx = canvas.getContext('2d');
   const colors = [
@@ -423,11 +540,11 @@ export function billboardTexture(seed = 0) {
  * variant: 0 = FamilyMart-inspired, 1 = 7-Eleven-inspired, 2 = Lawson-inspired
  */
 export function konbiniTexture(variant = 0) {
-  const key = `konbini-${variant}-v3`;
+  const key = `konbini-${variant}-v5`;
   if (cache.has(key)) return cache.get(key);
 
-  const W = 512;
-  const H = 384;
+  const W = 768;
+  const H = 512;
   const canvas = makeCanvas(W, H);
   const ctx = canvas.getContext('2d');
 
@@ -458,80 +575,109 @@ export function konbiniTexture(variant = 0) {
   ctx.fillStyle = s.wall;
   ctx.fillRect(0, 0, W, H);
 
-  // Header stripe
-  const sh = 52;
+  // Header stripe (thicker, more brand presence)
+  const sh = 72;
   const band = W / s.stripe.length;
   s.stripe.forEach((col, i) => {
     ctx.fillStyle = col === '#ffffff' ? '#f0f4ff' : col;
     ctx.fillRect(i * band, 0, band + 1, sh);
   });
-  ctx.fillStyle = variant === 2 ? '#0033a0' : '#fff';
-  if (variant === 2) {
-    ctx.fillStyle = '#fff';
-  }
-  ctx.font = 'bold 28px sans-serif';
+  // Gloss highlight on stripe
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  ctx.fillRect(0, 0, W, 10);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 36px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(s.name, W / 2, 20);
-  ctx.font = '14px "Hiragino Sans","Noto Sans JP",sans-serif';
-  ctx.fillText(s.nameJa, W / 2, 40);
+  ctx.shadowColor = 'rgba(0,0,0,0.35)';
+  ctx.shadowBlur = 6;
+  ctx.fillText(s.name, W / 2, 28);
+  ctx.shadowBlur = 0;
+  ctx.font = '18px "Hiragino Sans","Noto Sans JP",sans-serif';
+  ctx.fillText(s.nameJa, W / 2, 54);
 
-  // Bright interior glass
+  // Bright interior glass with warm fluorescent glow
   const gGlass = ctx.createLinearGradient(0, sh, 0, H);
-  gGlass.addColorStop(0, 'rgba(255,248,220,0.95)');
-  gGlass.addColorStop(1, 'rgba(255,236,180,0.85)');
+  gGlass.addColorStop(0, 'rgba(255,252,230,0.98)');
+  gGlass.addColorStop(0.5, 'rgba(255,245,200,0.92)');
+  gGlass.addColorStop(1, 'rgba(255,230,160,0.88)');
   ctx.fillStyle = gGlass;
-  ctx.fillRect(12, sh + 8, W - 24, H - sh - 48);
+  ctx.fillRect(14, sh + 10, W - 28, H - sh - 58);
 
-  // Window mullions
-  ctx.strokeStyle = 'rgba(40,50,60,0.35)';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(12, sh + 8, W - 24, H - sh - 48);
+  // Window mullions + frame
+  ctx.strokeStyle = 'rgba(40,50,60,0.4)';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(14, sh + 10, W - 28, H - sh - 58);
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(W / 2, sh + 8);
-  ctx.lineTo(W / 2, H - 40);
+  ctx.moveTo(W / 2, sh + 10);
+  ctx.lineTo(W / 2, H - 48);
+  ctx.moveTo(14, sh + 10 + (H - sh - 58) * 0.55);
+  ctx.lineTo(W - 14, sh + 10 + (H - sh - 58) * 0.55);
   ctx.stroke();
 
-  // Door
-  ctx.fillStyle = 'rgba(30,40,50,0.55)';
-  ctx.fillRect(W / 2 - 40, sh + 40, 80, H - sh - 90);
-  ctx.fillStyle = 'rgba(200,220,240,0.5)';
-  ctx.fillRect(W / 2 - 34, sh + 48, 30, H - sh - 110);
-  ctx.fillRect(W / 2 + 4, sh + 48, 30, H - sh - 110);
+  // Automatic sliding door
+  ctx.fillStyle = 'rgba(30,40,50,0.5)';
+  ctx.fillRect(W / 2 - 55, sh + 50, 110, H - sh - 120);
+  ctx.fillStyle = 'rgba(190,215,235,0.55)';
+  ctx.fillRect(W / 2 - 48, sh + 58, 42, H - sh - 140);
+  ctx.fillRect(W / 2 + 6, sh + 58, 42, H - sh - 140);
+  // Door handles
+  ctx.fillStyle = '#c8d0d8';
+  ctx.fillRect(W / 2 - 10, sh + 120, 4, 28);
+  ctx.fillRect(W / 2 + 6, sh + 120, 4, 28);
   // Automatic door sensor bar
   ctx.fillStyle = s.accent;
-  ctx.fillRect(W / 2 - 44, sh + 36, 88, 6);
+  ctx.fillRect(W / 2 - 58, sh + 44, 116, 8);
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.fillRect(W / 2 - 20, sh + 46, 40, 4);
 
-  // Shelf silhouettes inside
-  ctx.fillStyle = 'rgba(80,100,60,0.25)';
-  for (let i = 0; i < 4; i++) {
-    ctx.fillRect(24, sh + 50 + i * 36, W / 2 - 80, 12);
-    ctx.fillRect(W / 2 + 50, sh + 50 + i * 36, W / 2 - 80, 12);
+  // Shelf silhouettes + product colors inside
+  for (let i = 0; i < 5; i++) {
+    ctx.fillStyle = 'rgba(90,110,70,0.28)';
+    ctx.fillRect(28, sh + 55 + i * 42, W / 2 - 100, 14);
+    ctx.fillRect(W / 2 + 60, sh + 55 + i * 42, W / 2 - 100, 14);
+    const cols = ['#e63946', '#457b9d', '#2a9d8f', '#e9c46a', '#ff006e'];
+    for (let p = 0; p < 5; p++) {
+      ctx.fillStyle = cols[p];
+      ctx.globalAlpha = 0.45;
+      ctx.fillRect(32 + p * 28, sh + 48 + i * 42, 18, 10);
+      ctx.fillRect(W / 2 + 64 + p * 28, sh + 48 + i * 42, 18, 10);
+      ctx.globalAlpha = 1;
+    }
   }
 
-  // Promo posters
+  // Ceiling light strip reflection
+  ctx.fillStyle = 'rgba(255,255,240,0.35)';
+  ctx.fillRect(40, sh + 18, W - 80, 8);
+
+  // Promo posters along bottom
   const posters =
     variant === 0
-      ? ['#00a040', '#00a0e9', '#ffcc00', '#333']
+      ? ['#00a040', '#00a0e9', '#ffcc00', '#333', '#ff6600']
       : variant === 1
-        ? ['#e60012', '#ff6600', '#22aa44', '#fff200']
-        : ['#0033a0', '#7ec8ff', '#ff6600', '#fff'];
+        ? ['#e60012', '#ff6600', '#22aa44', '#fff200', '#0033a0']
+        : ['#0033a0', '#7ec8ff', '#ff6600', '#fff', '#00a040'];
+  const labels = ['新商品', 'おにぎり', 'コーヒー', '24H', 'フェア'];
   posters.forEach((c, i) => {
     ctx.fillStyle = c;
-    ctx.fillRect(20 + i * 120, H - 36, 100, 28);
-    ctx.fillStyle = c === '#fff' || c === '#fff200' || c === '#ffcc00' ? '#111' : '#fff';
-    ctx.font = 'bold 11px sans-serif';
-    ctx.fillText(['新商品', 'おにぎり', 'コーヒー', '24H'][i], 70 + i * 120, H - 22);
+    ctx.fillRect(18 + i * 148, H - 44, 136, 34);
+    ctx.fillStyle = c === '#fff' || c === '#fff200' || c === '#ffcc00' || c === '#7ec8ff' ? '#111' : '#fff';
+    ctx.font = 'bold 14px "Hiragino Sans","Noto Sans JP",sans-serif';
+    ctx.fillText(labels[i], 86 + i * 148, H - 27);
   });
 
   // Open 24h badge
   ctx.fillStyle = s.accent;
   ctx.beginPath();
-  ctx.arc(W - 36, sh + 28, 22, 0, Math.PI * 2);
+  ctx.arc(W - 48, sh + 36, 28, 0, Math.PI * 2);
   ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
   ctx.fillStyle = '#fff';
-  ctx.font = 'bold 10px sans-serif';
-  ctx.fillText('24H', W - 36, sh + 28);
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillText('24H', W - 48, sh + 36);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;

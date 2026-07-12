@@ -105,6 +105,8 @@ export function buildWorld(scene, mapData) {
 
   addStreetProps(root, streetLights, signalHeads);
   addJapaneseProps(root, neonMaterials, konbiniPositions);
+  addIzakayaAlleys(root, neonMaterials, streetLights);
+  addJapaneseScenicProps(root, neonMaterials, streetLights);
   addDenseStreetClutter(root, neonMaterials, streetLights);
   const { stationZones } = addRailwayStations(root, neonMaterials, streetLights);
   addHachikoMarker(root);
@@ -113,6 +115,7 @@ export function buildWorld(scene, mapData) {
   addBillboards(root, neonMaterials);
   addUtilityPoles(root);
   addExtraFacades(root, neonMaterials);
+  addWireTangles(root);
 
   // AABB colliders (slightly inset for sidewalk walkability)
   const colliders = mapData.buildings
@@ -217,35 +220,48 @@ function extrudeBuilding(b, neonMaterials) {
     }
   }
 
-  // Neon box signs on commercial mid-rises (denser)
-  if (height > 12 && height < 140 && seed % 5 < 4) {
+  // Neon box signs on commercial mid-rises (denser — Kamurocho style)
+  if (height > 10 && height < 160 && seed % 6 < 5) {
     const neonCol = PALETTE.neon[seed % PALETTE.neon.length];
     const neonMat = new THREE.MeshStandardMaterial({
       color: neonCol,
       emissive: neonCol,
-      emissiveIntensity: 1.05,
-      roughness: 0.32,
+      emissiveIntensity: 1.15,
+      roughness: 0.28,
     });
-    neonMaterials.push({ mat: neonMat, base: 1.05 });
+    neonMaterials.push({ mat: neonMat, base: 1.15 });
     const sign = new THREE.Mesh(
-      new THREE.BoxGeometry(3.5 + (seed % 5), 1.8 + (seed % 3) * 0.4, 0.3),
+      new THREE.BoxGeometry(3.8 + (seed % 5), 2.0 + (seed % 3) * 0.45, 0.32),
       neonMat
     );
-    sign.position.set(center.x, 6 + (seed % 12), box.max.z + 0.35);
+    sign.position.set(center.x, 6 + (seed % 12), box.max.z + 0.38);
     mesh.add(sign);
-    // Second stacked sign
-    if (seed % 3 === 0) {
+    // Stacked signs
+    if (seed % 2 === 0) {
       const neonCol2 = PALETTE.neon[(seed + 3) % PALETTE.neon.length];
       const neonMat2 = new THREE.MeshStandardMaterial({
         color: neonCol2,
         emissive: neonCol2,
-        emissiveIntensity: 0.95,
-        roughness: 0.35,
+        emissiveIntensity: 1.05,
+        roughness: 0.3,
       });
-      neonMaterials.push({ mat: neonMat2, base: 0.95 });
-      const sign2 = new THREE.Mesh(new THREE.BoxGeometry(2.8, 1.4, 0.25), neonMat2);
-      sign2.position.set(center.x, 9 + (seed % 8), box.max.z + 0.35);
+      neonMaterials.push({ mat: neonMat2, base: 1.05 });
+      const sign2 = new THREE.Mesh(new THREE.BoxGeometry(3.0, 1.5, 0.28), neonMat2);
+      sign2.position.set(center.x, 9 + (seed % 8), box.max.z + 0.38);
       mesh.add(sign2);
+    }
+    if (seed % 3 === 0) {
+      const neonCol3 = PALETTE.neon[(seed + 5) % PALETTE.neon.length];
+      const neonMat3 = new THREE.MeshStandardMaterial({
+        color: neonCol3,
+        emissive: neonCol3,
+        emissiveIntensity: 0.95,
+        roughness: 0.32,
+      });
+      neonMaterials.push({ mat: neonMat3, base: 0.95 });
+      const sign3 = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.2, 0.22), neonMat3);
+      sign3.position.set(center.x + size.x * 0.15, 12 + (seed % 6), box.max.z + 0.38);
+      mesh.add(sign3);
     }
   }
 
@@ -478,6 +494,7 @@ function addJapaneseProps(root, neonMaterials, konbiniPositions) {
     { variant: 1, brand: 'seven', awning: 0xe60012, name: '7-ELEVEN' },
     { variant: 2, brand: 'lawson', awning: 0x0033a0, name: 'LAWSON' },
   ];
+  // Street-visible konbini (must stay in sync with interiors.js enter zones)
   const konbinis = [
     { x: 42, z: 28, rot: 0, variant: 0 },
     { x: -48, z: -22, rot: Math.PI / 2, variant: 1 },
@@ -487,6 +504,10 @@ function addJapaneseProps(root, neonMaterials, konbiniPositions) {
     { x: -70, z: 20, rot: 0.5, variant: 2 },
     { x: 15, z: 75, rot: 0.2, variant: 0 },
     { x: -80, z: -50, rot: 1.0, variant: 1 },
+    { x: 95, z: -35, rot: -0.8, variant: 2 },
+    { x: -25, z: 90, rot: 0.4, variant: 0 },
+    { x: 55, z: 85, rot: -1.1, variant: 1 },
+    { x: -95, z: -15, rot: 0.9, variant: 2 },
   ];
   for (const k of konbinis) {
     const brand = brands[k.variant % 3];
@@ -495,50 +516,112 @@ function addJapaneseProps(root, neonMaterials, konbiniPositions) {
       map: tex,
       emissive: 0xffffff,
       emissiveMap: tex,
-      emissiveIntensity: 0.45,
-      roughness: 0.5,
+      emissiveIntensity: 0.55,
+      roughness: 0.42,
+      metalness: 0.08,
     });
-    neonMaterials.push({ mat, base: 0.45 });
-    const body = new THREE.Mesh(new THREE.BoxGeometry(9, 4.5, 6.5), mat);
-    body.position.set(k.x, 2.25, k.z);
+    neonMaterials.push({ mat, base: 0.55 });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(10, 5, 7.2), mat);
+    body.position.set(k.x, 2.5, k.z);
     body.rotation.y = k.rot;
     body.castShadow = true;
+    body.receiveShadow = true;
     root.add(body);
-    // Side walls (simple white)
+    // Side / back walls
     const sideMat = new THREE.MeshStandardMaterial({ color: 0xf2f4f0, roughness: 0.7 });
-    const side = new THREE.Mesh(new THREE.BoxGeometry(0.2, 4.5, 6.5), sideMat);
-    side.position.set(k.x, 2.25, k.z);
+    const side = new THREE.Mesh(new THREE.BoxGeometry(0.25, 5, 7.2), sideMat);
+    side.position.set(
+      k.x + Math.cos(k.rot) * 5.05,
+      2.5,
+      k.z - Math.sin(k.rot) * 5.05
+    );
     side.rotation.y = k.rot;
-    // offset along local X — approximate with rotation
-    side.position.x += Math.cos(k.rot) * 4.5;
-    side.position.z -= Math.sin(k.rot) * 4.5;
     root.add(side);
+    const back = new THREE.Mesh(new THREE.BoxGeometry(10, 5, 0.25), sideMat);
+    back.position.set(
+      k.x - Math.sin(k.rot) * 3.7,
+      2.5,
+      k.z - Math.cos(k.rot) * 3.7
+    );
+    back.rotation.y = k.rot;
+    root.add(back);
+
+    // Roof cap
+    const roof = new THREE.Mesh(
+      new THREE.BoxGeometry(10.4, 0.35, 7.5),
+      new THREE.MeshStandardMaterial({ color: 0x3a4048, roughness: 0.85, metalness: 0.2 })
+    );
+    roof.position.set(k.x, 5.15, k.z);
+    roof.rotation.y = k.rot;
+    root.add(roof);
 
     const awning = new THREE.Mesh(
-      new THREE.BoxGeometry(9.4, 0.4, 1.0),
+      new THREE.BoxGeometry(10.6, 0.45, 1.3),
       new THREE.MeshStandardMaterial({
         color: brand.awning,
         emissive: brand.awning,
-        emissiveIntensity: 0.55,
+        emissiveIntensity: 0.7,
       })
     );
-    awning.position.set(k.x, 4.6, k.z);
+    awning.position.set(
+      k.x + Math.sin(k.rot) * 3.6,
+      5.0,
+      k.z + Math.cos(k.rot) * 3.6
+    );
     awning.rotation.y = k.rot;
     root.add(awning);
-    neonMaterials.push({ mat: awning.material, base: 0.55 });
+    neonMaterials.push({ mat: awning.material, base: 0.7 });
+
+    // Brand flag pole sign
+    const flag = new THREE.Mesh(
+      new THREE.BoxGeometry(0.15, 3.2, 0.9),
+      new THREE.MeshStandardMaterial({
+        color: brand.awning,
+        emissive: brand.awning,
+        emissiveIntensity: 0.65,
+      })
+    );
+    flag.position.set(
+      k.x + Math.cos(k.rot) * 5.2 + Math.sin(k.rot) * 3.2,
+      4.2,
+      k.z - Math.sin(k.rot) * 5.2 + Math.cos(k.rot) * 3.2
+    );
+    flag.rotation.y = k.rot;
+    root.add(flag);
+    neonMaterials.push({ mat: flag.material, base: 0.65 });
 
     // Entrance marker pad
     const pad = new THREE.Mesh(
-      new THREE.PlaneGeometry(3, 2),
+      new THREE.PlaneGeometry(3.5, 2.4),
       new THREE.MeshStandardMaterial({ color: 0x2a2e34, roughness: 0.9 })
     );
     pad.rotation.x = -Math.PI / 2;
-    pad.position.set(k.x + Math.sin(k.rot) * 4, 0.08, k.z + Math.cos(k.rot) * 4);
+    pad.position.set(k.x + Math.sin(k.rot) * 4.4, 0.08, k.z + Math.cos(k.rot) * 4.4);
     root.add(pad);
 
-    const glow = new THREE.PointLight(0xffe8c0, 1.15, 20, 2);
-    glow.position.set(k.x, 2.6, k.z);
-    glow.userData.baseIntensity = 1.15;
+    // Door glow strip
+    const doorGlow = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.2, 2.4),
+      new THREE.MeshStandardMaterial({
+        color: 0xfff2cc,
+        emissive: 0xffe8a0,
+        emissiveIntensity: 0.45,
+        transparent: true,
+        opacity: 0.55,
+      })
+    );
+    doorGlow.position.set(
+      k.x + Math.sin(k.rot) * 3.65,
+      1.5,
+      k.z + Math.cos(k.rot) * 3.65
+    );
+    doorGlow.rotation.y = k.rot;
+    root.add(doorGlow);
+    neonMaterials.push({ mat: doorGlow.material, base: 0.45 });
+
+    const glow = new THREE.PointLight(0xffe8c0, 1.35, 24, 2);
+    glow.position.set(k.x, 2.8, k.z);
+    glow.userData.baseIntensity = 1.35;
     root.add(glow);
     konbiniPositions.push({
       x: k.x,
@@ -788,6 +871,12 @@ function addBillboards(root, neonMaterials) {
     { x: -75, z: 50, h: 26, seed: 7 },
     { x: 20, z: -80, h: 30, seed: 0 },
     { x: -30, z: -75, h: 22, seed: 3 },
+    { x: 100, z: 40, h: 34, seed: 2 },
+    { x: -100, z: -25, h: 28, seed: 5 },
+    { x: 15, z: 90, h: 26, seed: 1 },
+    { x: -65, z: 85, h: 30, seed: 4 },
+    { x: 75, z: -85, h: 32, seed: 6 },
+    { x: 0, z: -50, h: 20, seed: 7 },
   ];
   for (const a of ads) {
     const tex = billboardTexture(a.seed);
@@ -846,14 +935,27 @@ function addExtraFacades(root, neonMaterials) {
     [120, 60, 40, -0.2],
     [-120, 70, 35, 0.4],
     [75, -100, 18, 0.6],
+    [38, 38, 22, 0.15],
+    [-42, 32, 19, -0.4],
+    [62, -28, 28, 0.7],
+    [-58, -42, 24, 1.2],
+    [22, -95, 16, 0.1],
+    [-15, 105, 30, -0.2],
+    [105, 80, 36, 0.35],
+    [-110, -80, 20, 0.9],
+    [130, 20, 42, 0],
+    [-130, 40, 38, 0.5],
+    [45, 120, 26, -0.6],
+    [-75, 115, 22, 0.25],
   ];
   spots.forEach(([x, z, h, rot], i) => {
     const seed = 9000 + i * 17;
     const tex = facadeTexture(seed);
     const mat = new THREE.MeshStandardMaterial({
       map: tex,
-      roughness: 0.62,
-      metalness: 0.14,
+      roughness: 0.55,
+      metalness: 0.16,
+      envMapIntensity: 0.9,
     });
     const w = 10 + (i % 4) * 3;
     const d = 8 + (i % 3) * 2;
@@ -864,21 +966,341 @@ function addExtraFacades(root, neonMaterials) {
     mesh.receiveShadow = true;
     root.add(mesh);
 
-    // Stacked neon signs
+    // Stacked neon signs (both sides when possible)
+    const vtex = verticalSignTexture(seed);
+    const vmat = new THREE.MeshStandardMaterial({
+      map: vtex,
+      emissive: 0xffffff,
+      emissiveMap: vtex,
+      emissiveIntensity: 0.7,
+    });
+    neonMaterials.push({ mat: vmat, base: 0.7 });
+    const v = new THREE.Mesh(new THREE.BoxGeometry(0.55, 5.5 + (i % 3), 0.22), vmat);
+    v.position.set(x + Math.cos(rot) * (w * 0.55), 6, z - Math.sin(rot) * (w * 0.55));
+    v.rotation.y = rot;
+    root.add(v);
     if (i % 2 === 0) {
-      const vtex = verticalSignTexture(seed);
-      const vmat = new THREE.MeshStandardMaterial({
-        map: vtex,
+      const vtex2 = verticalSignTexture(seed + 9);
+      const vmat2 = new THREE.MeshStandardMaterial({
+        map: vtex2,
         emissive: 0xffffff,
-        emissiveMap: vtex,
-        emissiveIntensity: 0.55,
+        emissiveMap: vtex2,
+        emissiveIntensity: 0.65,
       });
-      neonMaterials.push({ mat: vmat, base: 0.55 });
-      const v = new THREE.Mesh(new THREE.BoxGeometry(0.5, 5, 0.2), vmat);
-      v.position.set(x + w * 0.55, 6, z);
-      root.add(v);
+      neonMaterials.push({ mat: vmat2, base: 0.65 });
+      const v2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 4.2, 0.2), vmat2);
+      v2.position.set(x + Math.cos(rot) * (w * 0.55), 11, z - Math.sin(rot) * (w * 0.55) + 1.2);
+      v2.rotation.y = rot;
+      root.add(v2);
+    }
+
+    // Rooftop AC / water tank
+    if (h > 18) {
+      const tank = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.2, 1.3, 1.6, 10),
+        new THREE.MeshStandardMaterial({ color: 0x6a7078, metalness: 0.45, roughness: 0.5 })
+      );
+      tank.position.set(x, h + 1.0, z);
+      root.add(tank);
     }
   });
+}
+
+/** Narrow izakaya / snack bar alleys (横丁 vibes) */
+function addIzakayaAlleys(root, neonMaterials, streetLights) {
+  const alleys = [
+    { x: 32, z: 12, rot: 0.2 },
+    { x: -30, z: -12, rot: -0.4 },
+    { x: 8, z: -40, rot: 0.6 },
+    { x: -50, z: 15, rot: 1.1 },
+    { x: 60, z: -55, rot: -0.2 },
+  ];
+  const norenColors = [0xc41e3a, 0x1a3a6e, 0x2d6a4f, 0x5a2d6e, 0xc45c12];
+
+  for (let ai = 0; ai < alleys.length; ai++) {
+    const a = alleys[ai];
+    // Two facing low commercial buildings
+    for (const side of [-1, 1]) {
+      const seed = 5000 + ai * 20 + side;
+      const tex = facadeTexture(seed);
+      const mat = new THREE.MeshStandardMaterial({
+        map: tex,
+        roughness: 0.58,
+        metalness: 0.12,
+      });
+      const b = new THREE.Mesh(new THREE.BoxGeometry(14, 9 + (ai % 3) * 2, 5.5), mat);
+      const ox = Math.cos(a.rot) * side * 5.5;
+      const oz = -Math.sin(a.rot) * side * 5.5;
+      b.position.set(a.x + ox, 5, a.z + oz);
+      b.rotation.y = a.rot;
+      b.castShadow = true;
+      root.add(b);
+
+      // Noren curtains
+      for (let n = 0; n < 3; n++) {
+        const col = norenColors[(ai + n) % norenColors.length];
+        const noren = new THREE.Mesh(
+          new THREE.PlaneGeometry(1.1, 1.4),
+          new THREE.MeshStandardMaterial({
+            color: col,
+            emissive: col,
+            emissiveIntensity: 0.2,
+            side: THREE.DoubleSide,
+            roughness: 0.9,
+          })
+        );
+        noren.position.set(
+          a.x + ox + Math.sin(a.rot) * (2 + n * 1.3),
+          2.4,
+          a.z + oz + Math.cos(a.rot) * (2 + n * 1.3)
+        );
+        noren.rotation.y = a.rot + (side > 0 ? 0 : Math.PI);
+        root.add(noren);
+        neonMaterials.push({ mat: noren.material, base: 0.2 });
+      }
+    }
+
+    // Red chochin string over alley
+    for (let i = 0; i < 5; i++) {
+      const lx = a.x + Math.sin(a.rot) * (i * 2.2 - 4);
+      const lz = a.z + Math.cos(a.rot) * (i * 2.2 - 4);
+      const paper = new THREE.Mesh(
+        new THREE.SphereGeometry(0.32, 10, 8),
+        new THREE.MeshStandardMaterial({
+          color: 0xff2222,
+          emissive: 0xff2200,
+          emissiveIntensity: 0.95,
+          roughness: 0.7,
+        })
+      );
+      paper.scale.set(1, 1.3, 1);
+      paper.position.set(lx, 3.6, lz);
+      root.add(paper);
+      neonMaterials.push({ mat: paper.material, base: 0.95 });
+    }
+
+    const light = new THREE.PointLight(0xff6633, 1.1, 18, 2);
+    light.position.set(a.x, 3.2, a.z);
+    light.userData.baseIntensity = 1.1;
+    root.add(light);
+    streetLights.push(light);
+  }
+}
+
+/** Phone booths, taxi stand, shrine gate, mailboxes, more JP street furniture */
+function addJapaneseScenicProps(root, neonMaterials, streetLights) {
+  // Green public phones (公衆電話)
+  const phoneSpots = [
+    [12, 22],
+    [-20, -8],
+    [48, -40],
+    [-60, 40],
+    [80, 10],
+  ];
+  for (const [x, z] of phoneSpots) {
+    const booth = new THREE.Mesh(
+      new THREE.BoxGeometry(0.9, 2.2, 0.9),
+      new THREE.MeshStandardMaterial({
+        color: 0x1a8f4a,
+        emissive: 0x0a4020,
+        emissiveIntensity: 0.2,
+        metalness: 0.35,
+        roughness: 0.45,
+      })
+    );
+    booth.position.set(x, 1.1, z);
+    booth.castShadow = true;
+    root.add(booth);
+    const glass = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.7, 1.4),
+      new THREE.MeshStandardMaterial({
+        color: 0xaaddff,
+        transparent: true,
+        opacity: 0.45,
+        metalness: 0.5,
+        roughness: 0.15,
+      })
+    );
+    glass.position.set(x, 1.25, z + 0.46);
+    root.add(glass);
+  }
+
+  // Red post boxes (郵便ポスト)
+  const postSpots = [
+    [8, -18],
+    [-40, 8],
+    [55, 30],
+    [-12, 55],
+  ];
+  for (const [x, z] of postSpots) {
+    const box = new THREE.Mesh(
+      new THREE.BoxGeometry(0.55, 1.3, 0.4),
+      new THREE.MeshStandardMaterial({
+        color: 0xc41e3a,
+        roughness: 0.5,
+        metalness: 0.25,
+      })
+    );
+    box.position.set(x, 0.65, z);
+    root.add(box);
+    const cap = new THREE.Mesh(
+      new THREE.BoxGeometry(0.6, 0.15, 0.45),
+      new THREE.MeshStandardMaterial({ color: 0xa01830 })
+    );
+    cap.position.set(x, 1.35, z);
+    root.add(cap);
+  }
+
+  // Taxi stand canopy near station
+  const taxi = new THREE.Group();
+  taxi.position.set(35, 0, -78);
+  const canopy = new THREE.Mesh(
+    new THREE.BoxGeometry(10, 0.2, 4),
+    new THREE.MeshStandardMaterial({ color: 0x2a3040, metalness: 0.4, roughness: 0.5 })
+  );
+  canopy.position.y = 3.2;
+  taxi.add(canopy);
+  for (const ox of [-4, 4]) {
+    const p = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.12, 0.14, 3.2, 8),
+      new THREE.MeshStandardMaterial({ color: 0x4a5058 })
+    );
+    p.position.set(ox, 1.6, 0);
+    taxi.add(p);
+  }
+  const sign = new THREE.Mesh(
+    new THREE.BoxGeometry(3, 0.7, 0.15),
+    new THREE.MeshStandardMaterial({
+      color: 0xffd000,
+      emissive: 0xaa8800,
+      emissiveIntensity: 0.4,
+    })
+  );
+  sign.position.set(0, 3.5, 0);
+  taxi.add(sign);
+  neonMaterials.push({ mat: sign.material, base: 0.4 });
+  // Simple taxi body
+  const car = new THREE.Mesh(
+    new THREE.BoxGeometry(4.2, 1.5, 1.9),
+    new THREE.MeshStandardMaterial({ color: 0xc8a020, metalness: 0.4, roughness: 0.4 })
+  );
+  car.position.set(0, 0.85, 1.5);
+  taxi.add(car);
+  root.add(taxi);
+
+  // Small shrine-ish stone lanterns (石灯籠) near torii
+  for (const [x, z] of [
+    [16, -35],
+    [20, -35],
+  ]) {
+    const base = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.35, 0.45, 0.4, 8),
+      new THREE.MeshStandardMaterial({ color: 0x6a6e72, roughness: 0.9 })
+    );
+    base.position.set(x, 0.2, z);
+    root.add(base);
+    const pillar = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.12, 0.15, 1.2, 8),
+      new THREE.MeshStandardMaterial({ color: 0x5a5e62 })
+    );
+    pillar.position.set(x, 1.0, z);
+    root.add(pillar);
+    const lamp = new THREE.Mesh(
+      new THREE.BoxGeometry(0.45, 0.5, 0.45),
+      new THREE.MeshStandardMaterial({
+        color: 0xffe8a0,
+        emissive: 0xffcc66,
+        emissiveIntensity: 0.5,
+      })
+    );
+    lamp.position.set(x, 1.8, z);
+    root.add(lamp);
+    neonMaterials.push({ mat: lamp.material, base: 0.5 });
+  }
+
+  // Construction fencing / blue tarp (工事現場)
+  for (let i = 0; i < 8; i++) {
+    const fence = new THREE.Mesh(
+      new THREE.BoxGeometry(3.5, 2.0, 0.12),
+      new THREE.MeshStandardMaterial({ color: 0x2a6fbb, roughness: 0.75 })
+    );
+    fence.position.set(100 + i * 3.6, 1.0, 45);
+    root.add(fence);
+  }
+
+  // More street billboards low (立て看板)
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2 + 0.4;
+    const r = 42 + (i % 3) * 9;
+    const x = Math.cos(a) * r;
+    const z = Math.sin(a) * r;
+    const board = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 1.8, 0.12),
+      new THREE.MeshStandardMaterial({
+        color: PALETTE.neon[i % PALETTE.neon.length],
+        emissive: PALETTE.neon[i % PALETTE.neon.length],
+        emissiveIntensity: 0.35,
+      })
+    );
+    board.position.set(x, 1.0, z);
+    board.rotation.y = -a;
+    root.add(board);
+    neonMaterials.push({ mat: board.material, base: 0.35 });
+  }
+
+  // Crosswalk mirror poles
+  for (const [x, z] of [
+    [22, 22],
+    [-22, 22],
+    [22, -22],
+    [-22, -22],
+  ]) {
+    const pole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.08, 3.5, 6),
+      new THREE.MeshStandardMaterial({ color: 0x888890, metalness: 0.6, roughness: 0.35 })
+    );
+    pole.position.set(x, 1.75, z);
+    root.add(pole);
+    const mirror = new THREE.Mesh(
+      new THREE.SphereGeometry(0.35, 12, 10),
+      new THREE.MeshStandardMaterial({
+        color: 0xc8d0d8,
+        metalness: 0.9,
+        roughness: 0.1,
+      })
+    );
+    mirror.position.set(x, 3.6, z);
+    root.add(mirror);
+  }
+}
+
+/** Dense overhead power lines between utility poles (電線) */
+function addWireTangles(root) {
+  const pts = [
+    [20, 40],
+    [-30, 25],
+    [45, -40],
+    [-50, -30],
+    [70, 20],
+    [-20, -70],
+    [90, -50],
+    [-80, 60],
+    [20, 40],
+  ];
+  const mat = new THREE.LineBasicMaterial({ color: 0x2a2a2e, transparent: true, opacity: 0.55 });
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x0, z0] = pts[i];
+    const [x1, z1] = pts[i + 1];
+    for (let w = 0; w < 3; w++) {
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(x0, 9.2 + w * 0.25, z0),
+        new THREE.Vector3((x0 + x1) / 2, 7.8 + w * 0.2, (z0 + z1) / 2),
+        new THREE.Vector3(x1, 9.2 + w * 0.25, z1),
+      ]);
+      const geo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(12));
+      root.add(new THREE.Line(geo, mat));
+    }
+  }
 }
 
 /** Bikes, bollards, signposts, more lanterns — street life density */
@@ -1004,9 +1426,17 @@ export function setupAtmosphere(scene, renderer) {
   scene.add(bounce);
 
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.08;
+  renderer.toneMappingExposure = 1.12;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  if (renderer.shadowMap) {
+    try {
+      // Softer cinematic shadows where supported
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    } catch {
+      /* */
+    }
+  }
 
   return { sun, hemi, fill, bounce };
 }

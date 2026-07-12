@@ -49,23 +49,30 @@ async function main() {
     canvas,
     antialias: true,
     powerPreference: 'high-performance',
+    alpha: false,
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  // Higher pixel ratio on desktop for finer street detail (Yakuza-like clarity)
+  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent || '');
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.75 : 2.25));
   renderer.setSize(window.innerWidth, window.innerHeight, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  if ('physicallyCorrectLights' in renderer) renderer.physicallyCorrectLights = true;
 
   const scene = new THREE.Scene();
   const { sun, hemi } = setupAtmosphere(scene, renderer);
 
   const camera = new THREE.PerspectiveCamera(
-    72,
+    70,
     window.innerWidth / window.innerHeight,
-    0.1,
-    1400
+    0.08,
+    1600
   );
 
-  const amb = new THREE.AmbientLight(0x8a96a8, 0.45);
+  const amb = new THREE.AmbientLight(0x8a96a8, 0.42);
   scene.add(amb);
+  // Soft fill for street-level detail
+  const streetFill = new THREE.HemisphereLight(0xb0c4de, 0x3a3028, 0.18);
+  scene.add(streetFill);
 
   setLoad(0.12, '載入東京真實地圖資料（OpenStreetMap）…');
 
@@ -383,7 +390,7 @@ async function main() {
               : 'FamilyMart';
         setPrompt(`按 E ／ 點擊 · 進入 ${name}`);
       } else {
-        setPrompt('按 E ／ 點擊 · 進入 渋谷駅');
+        setPrompt('按 E ／ 點擊 · 進入 鉄道駅・月台');
       }
     } else {
       setPrompt('', false);
