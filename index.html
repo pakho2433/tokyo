@@ -72,17 +72,29 @@
       var t = document.getElementById('load-text');
       if (t && e && e.message) t.textContent = '載入失敗：' + e.message;
     }, true);
+    window.addEventListener('unhandledrejection', function (e) {
+      var t = document.getElementById('load-text');
+      if (t) t.textContent = '載入失敗：' + ((e && e.reason && e.reason.message) || '未知錯誤');
+    });
+    // Still stuck after 18s → offer light mode (fewer buildings) so phones can play
     setTimeout(function () {
       var loading = document.getElementById('loading');
       var t = document.getElementById('load-text');
-      if (loading && !loading.classList.contains('hidden') && t &&
-          (t.textContent.indexOf('初始化') === 0 || t.textContent.indexOf('…') >= 0)) {
-        // still stuck after 12s → hard refresh hint
-        if (t.textContent.indexOf('載入失敗') < 0 && t.textContent.indexOf('完成') < 0) {
-          t.textContent = t.textContent + '（若卡住請按 F5 重新整理）';
-        }
+      if (!loading || loading.classList.contains('hidden') || !t) return;
+      if (t.textContent.indexOf('完成') >= 0 || t.textContent.indexOf('載入失敗') >= 0) return;
+      if (location.search.indexOf('light=1') >= 0) {
+        t.textContent = t.textContent + '（仍卡住可強制重新整理）';
+        return;
       }
-    }, 12000);
+      t.innerHTML = '載入太慢？點此用輕量模式開啟（較少建築，更快）';
+      t.style.cursor = 'pointer';
+      t.style.textDecoration = 'underline';
+      t.onclick = function () {
+        var u = new URL(location.href);
+        u.searchParams.set('light', '1');
+        location.replace(u.toString());
+      };
+    }, 18000);
   </script>
 </body>
 </html>

@@ -37,7 +37,15 @@ function shapeFromRing(ring) {
   return shape;
 }
 
-export function buildWorld(scene, mapData) {
+function yieldFrame() {
+  return new Promise((r) => {
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => r());
+    else setTimeout(r, 0);
+  });
+}
+
+/** Async world build — yields every chunk so mobile Safari stays responsive */
+export async function buildWorld(scene, mapData, onProgress) {
   const root = new THREE.Group();
   root.name = 'tokyo-world';
   scene.add(root);
@@ -86,11 +94,16 @@ export function buildWorld(scene, mapData) {
     addRoadRibbon(roadGroup, road.points, road.width, asphaltTex, sidewalkTex);
   }
   root.add(roadGroup);
+  await yieldFrame();
 
-  // Buildings
+  // Buildings — chunked so UI progress bar keeps moving on phones
   const buildingGroup = new THREE.Group();
   let built = 0;
-  for (const b of mapData.buildings) {
+  const list = mapData.buildings || [];
+  const total = list.length;
+  const CHUNK = mapData.mobileLite ? 8 : 20;
+  for (let i = 0; i < total; i++) {
+    const b = list[i];
     try {
       const mesh = extrudeBuilding(b, neonMaterials);
       if (mesh) {
@@ -100,22 +113,37 @@ export function buildWorld(scene, mapData) {
     } catch {
       /* skip bad poly */
     }
+    if (i % CHUNK === CHUNK - 1 || i === total - 1) {
+      const p = 0.75 + 0.14 * ((i + 1) / Math.max(1, total));
+      onProgress?.(p, `建立 3D 建築（${i + 1}/${total}）・日本街景…`);
+      await yieldFrame();
+    }
   }
   root.add(buildingGroup);
 
+  onProgress?.(0.9, '鋪設街景道具・鐵路・便利店…');
+  await yieldFrame();
+
   addStreetProps(root, streetLights, signalHeads);
   addJapaneseProps(root, neonMaterials, konbiniPositions);
-  addIzakayaAlleys(root, neonMaterials, streetLights);
-  addJapaneseScenicProps(root, neonMaterials, streetLights);
-  addDenseStreetClutter(root, neonMaterials, streetLights);
+  // Skip heaviest clutter on mobile lite so load finishes
+  if (!mapData.mobileLite) {
+    addIzakayaAlleys(root, neonMaterials, streetLights);
+    addJapaneseScenicProps(root, neonMaterials, streetLights);
+    addDenseStreetClutter(root, neonMaterials, streetLights);
+  } else {
+    addDenseStreetClutter(root, neonMaterials, streetLights);
+  }
   const { stationZones } = addRailwayStations(root, neonMaterials, streetLights);
   addHachikoMarker(root);
   addLandmarkLabels(root, mapData.buildings);
   addSkylineFar(root);
   addBillboards(root, neonMaterials);
   addUtilityPoles(root);
-  addExtraFacades(root, neonMaterials);
-  addWireTangles(root);
+  if (!mapData.mobileLite) {
+    addExtraFacades(root, neonMaterials);
+    addWireTangles(root);
+  }
 
   // AABB colliders (slightly inset for sidewalk walkability)
   const colliders = mapData.buildings
@@ -192,8 +220,9 @@ function extrudeBuilding(b, neonMaterials) {
   }
 
   const mesh = new THREE.Mesh(geo, mat);
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
+  // Shadows off for buildings — major mobile GPU/CPU win during load
+  mesh.castShadow = false;
+  mesh.receiveShadow = false;
   mesh.userData = { name: b.name, height, isLandmark: !!b.isLandmark };
 
   const box = new THREE.Box3().setFromObject(mesh);

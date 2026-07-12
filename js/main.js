@@ -45,15 +45,17 @@ async function main() {
   setLoad(0.05, '初始化 Three.js…');
 
   const canvas = $('c');
+  // Higher pixel ratio on desktop for finer street detail (Yakuza-like clarity)
+  const isMobile =
+    /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') ||
+    (navigator.maxTouchPoints > 1 && window.innerWidth < 1100);
   const renderer = new THREE.WebGLRenderer({
     canvas,
-    antialias: true,
-    powerPreference: 'high-performance',
+    antialias: !isMobile,
+    powerPreference: isMobile ? 'low-power' : 'high-performance',
     alpha: false,
   });
-  // Higher pixel ratio on desktop for finer street detail (Yakuza-like clarity)
-  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent || '');
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.75 : 2.25));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.25 : 2.25));
   renderer.setSize(window.innerWidth, window.innerHeight, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   if ('physicallyCorrectLights' in renderer) renderer.physicallyCorrectLights = true;
@@ -65,7 +67,7 @@ async function main() {
     70,
     window.innerWidth / window.innerHeight,
     0.08,
-    1600
+    isMobile ? 900 : 1600
   );
 
   const amb = new THREE.AmbientLight(0x8a96a8, 0.42);
@@ -88,7 +90,7 @@ async function main() {
   setLoad(0.75, `建立 3D 建築（${mapData.count} 棟）・日本街景…`);
   await new Promise((r) => setTimeout(r, 20));
 
-  const world = buildWorld(scene, mapData);
+  const world = await buildWorld(scene, mapData, setLoad);
   const interiors = buildInteriors(scene);
   const trainCycle = new TrainCycle();
 

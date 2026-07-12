@@ -232,7 +232,16 @@ function parseOSM(data, origin) {
     const lb = b.isLandmark ? 1000 : 0;
     return lb + b.height - (la + a.height);
   });
-  const capped = withLandmarks.slice(0, 950);
+  // Mobile Safari freezes on ~950 extruded buildings + unique canvas textures.
+  const params = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
+  const forceLight = params?.get('light') === '1' || params?.get('lite') === '1';
+  const isMobile =
+    forceLight ||
+    (typeof navigator !== 'undefined' &&
+      (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+        (navigator.maxTouchPoints > 1 && typeof window !== 'undefined' && window.innerWidth < 1100)));
+  const maxBuildings = forceLight ? 120 : isMobile ? 220 : 550;
+  const capped = withLandmarks.slice(0, maxBuildings);
 
   return {
     origin,
@@ -240,6 +249,7 @@ function parseOSM(data, origin) {
     roads,
     source: 'openstreetmap',
     count: capped.length,
+    mobileLite: !!isMobile,
   };
 }
 

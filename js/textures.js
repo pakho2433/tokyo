@@ -23,10 +23,18 @@ function mulberry32(a) {
   };
 }
 
+const isMobileClient =
+  typeof navigator !== 'undefined' &&
+  (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && typeof window !== 'undefined' && window.innerWidth < 1100));
+
 function noiseFill(ctx, W, H, seed, amount = 10) {
+  // Skip expensive full-buffer noise on mobile — main freeze culprit with hundreds of facades
+  if (isMobileClient) return;
   const img = ctx.getImageData(0, 0, W, H);
   const d = img.data;
-  for (let i = 0; i < d.length; i += 4) {
+  const step = 8;
+  for (let i = 0; i < d.length; i += step) {
     const n = ((seed * 1103515245 + i * 12345) >>> 0) % (amount * 2) - amount;
     d[i] = Math.max(0, Math.min(255, d[i] + n));
     d[i + 1] = Math.max(0, Math.min(255, d[i + 1] + n));
@@ -38,11 +46,14 @@ function noiseFill(ctx, W, H, seed, amount = 10) {
 /** Dense Japanese commercial mid-rise facade (人中之龍-style clutter) */
 export function facadeTexture(seed = 0, opts = {}) {
   const night = opts.tone === 'night';
-  const key = `f-yakuza-${seed}-${night ? 'n' : 'd'}-v4`;
+  // Reuse a small pool of facades instead of one unique huge texture per building
+  const bucket = ((seed % 28) + 28) % 28;
+  const key = `f-yakuza-b${bucket}-${night ? 'n' : 'd'}-v5`;
   if (cache.has(key)) return cache.get(key);
 
-  const W = 768;
-  const H = 1536;
+  const W = isMobileClient ? 128 : 256;
+  const H = isMobileClient ? 256 : 512;
+  seed = bucket;
   const canvas = makeCanvas(W, H);
   const ctx = canvas.getContext('2d');
   const rnd = mulberry32(seed * 9973 + 17);
@@ -389,7 +400,9 @@ export function facadeTexture(seed = 0, opts = {}) {
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
+  tex.anisotropy = isMobileClient ? 1 : 4;
+  tex.generateMipmaps = !isMobileClient;
+  if (isMobileClient) tex.minFilter = THREE.LinearFilter;
   cache.set(key, tex);
   return tex;
 }
