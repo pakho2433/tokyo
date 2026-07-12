@@ -1,0 +1,13 @@
+{
+  "name": "東京步行：澀谷雨後",
+  "short_name": "東京步行",
+  "description": "手機優先的寫實澀谷 3D 步行體驗",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#0b1013",
+  "theme_color": "#0b1013",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

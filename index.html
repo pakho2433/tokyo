@@ -1,0 +1,135 @@
+﻿<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1013" />
+    <meta name="description" content="以真實澀谷地標為基礎的手機優先 3D 步行體驗。" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <title>東京步行：澀谷雨後</title>
+    <script type="module" crossorigin src="./assets/index-BfOrWX_w.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DszRso5w.css">
+  </head>
+  <body>
+    <main id="app" aria-label="東京澀谷 3D 步行體驗">
+      <div id="viewport" aria-label="3D 世界；右側拖曳可轉動視角"></div>
+      <div class="cinema-bars" aria-hidden="true"></div>
+      <div class="grain" aria-hidden="true"></div>
+
+      <section id="boot" class="boot" aria-labelledby="boot-title">
+        <div class="boot__wash" aria-hidden="true"></div>
+        <div class="boot__content">
+          <p class="eyebrow">TOKYO STREET STUDY · 01</p>
+          <h1 id="boot-title"><span>東京步行</span><strong>澀谷・雨後</strong></h1>
+          <p class="boot__lede">穿過人潮與霓虹，從忠犬八公像走進世界最具辨識度的城市路口。</p>
+          <div class="boot__facts" aria-label="場景資訊">
+            <span>35.6595° N</span><span>139.7005° E</span><span>第三人稱探索</span>
+          </div>
+          <button id="enterBtn" class="enter-button" type="button">
+            <span class="enter-button__label">進入澀谷</span>
+            <span class="enter-button__hint">ENTER STREET</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
+          </button>
+          <p class="boot__note">左手移動 · 右手轉向 · 可切換第一人稱</p>
+        </div>
+        <div class="boot__rail" aria-hidden="true"><span></span><b>街區載入完成</b></div>
+      </section>
+
+      <section id="hud" class="hud" aria-label="遊戲介面" hidden>
+        <div class="location-card glass">
+          <span class="location-card__index">01</span>
+          <span><b>渋谷スクランブル交差点</b><small>澀谷十字路口 · 東京都</small></span>
+          <i aria-hidden="true"></i>
+        </div>
+
+        <div class="world-status glass" aria-live="polite">
+          <span id="clock">19:42</span><i></i><span id="weatherLabel">雨後 · 18°C</span>
+        </div>
+
+        <nav class="hud-actions" aria-label="場景設定">
+          <button id="cameraBtn" class="icon-button glass" type="button" aria-label="切換第一或第三人稱">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13.5" r="3.2"/></svg>
+            <span id="cameraLabel">第三人稱</span>
+          </button>
+          <button id="soundBtn" class="icon-button glass" type="button" aria-label="開啟環境音" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9v6h4l5 4V5L9 9z"/><path class="sound-wave" d="M17 9c1.4 1.6 1.4 4.4 0 6M19.5 6.5c3 3.2 3 7.8 0 11"/></svg>
+            <span>環境音</span>
+          </button>
+          <button id="dataBtn" class="icon-button glass" type="button" aria-label="查看場景資料來源">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v7M12 7.2v.2"/></svg>
+            <span>資料</span>
+          </button>
+        </nav>
+
+        <aside class="minimap-shell glass" aria-label="小地圖">
+          <canvas id="minimap" width="280" height="280"></canvas>
+          <span class="minimap-north">N</span>
+          <span class="minimap-caption">SHIBUYA 150-0043</span>
+        </aside>
+
+        <div id="mission" class="mission glass">
+          <span class="mission__mark" aria-hidden="true"></span>
+          <span><small>自由探索</small><b id="nearestLabel">前往 SHIBUYA 109 · 96 m</b></span>
+        </div>
+
+        <div id="landmarkToast" class="landmark-toast glass" role="status" aria-live="polite">
+          <span id="toastDistance">18 m</span>
+          <b id="toastTitle">忠犬八公像</b>
+          <small id="toastFact">東京最著名的會合地標之一</small>
+        </div>
+
+        <div id="joystick" class="joystick" aria-label="移動搖桿" role="application">
+          <div class="joystick__ticks" aria-hidden="true"></div>
+          <div id="joystickKnob" class="joystick__knob" aria-hidden="true"><span></span></div>
+          <small>MOVE</small>
+        </div>
+
+        <button id="runBtn" class="run-button" type="button" aria-label="按住奔跑">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="17" cy="6" r="3"/><path d="m14 11 5 2 3.5 5M14 11l-3 7 5 2-3 8M16 20l5 7M19 13l-4 5M11 18l-5 3"/></svg>
+          <span>RUN</span>
+        </button>
+
+        <div class="look-hint" aria-hidden="true"><span></span><small>拖曳視角</small></div>
+        <div class="reticle" aria-hidden="true"></div>
+        <button id="qualityBtn" class="quality-badge glass" type="button" aria-label="切換畫質">
+          <i></i><span id="qualityLabel">AUTO</span><small id="fpsLabel">60 FPS</small>
+        </button>
+      </section>
+
+      <section id="dataSheet" class="sheet" aria-labelledby="sheetTitle" aria-hidden="true">
+        <button class="sheet__scrim" data-close-sheet aria-label="關閉資料說明"></button>
+        <div class="sheet__panel glass">
+          <div class="sheet__grab" aria-hidden="true"></div>
+          <div class="sheet__header">
+            <span><small>SCENE TRANSPARENCY</small><h2 id="sheetTitle">場景資料與準確度</h2></span>
+            <button type="button" class="sheet__close" data-close-sheet aria-label="關閉">×</button>
+          </div>
+          <div class="accuracy-grid">
+            <article><b>地標關係</b><strong>已校準</strong><p>以澀谷站、十字路口、八公像、109、Scramble Square 的真實相對方位建立。</p></article>
+            <article><b>建築尺度</b><strong>資料＋近似</strong><p>已知高度採官方資料；外牆、店面與非地標建築為程序化重建。</p></article>
+            <article><b>使用目的</b><strong>可玩研究</strong><p>這是約 260 × 260 m 的寫實垂直切片，不是導航、測繪或完整東京數位孿生。</p></article>
+          </div>
+          <div class="source-list">
+            <h3>主要資料來源</h3>
+            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer"><span>01</span><b>OpenStreetMap contributors</b><small>道路骨架與地標位置 · ODbL</small></a>
+            <a href="https://www.gotokyo.org/en/story/walks-and-tours/shibuya/index.html" target="_blank" rel="noreferrer"><span>02</span><b>GO TOKYO 官方旅遊指南</b><small>五組行人穿越線與地標關係</small></a>
+            <a href="https://www.shibuya-scramble-square.com/en/index.html" target="_blank" rel="noreferrer"><span>03</span><b>SHIBUYA SCRAMBLE SQUARE</b><small>47 層 · 約 230 m · 官方設施資料</small></a>
+            <a href="https://www.shibuya109.jp/SHIBUYA/info/" target="_blank" rel="noreferrer"><span>04</span><b>SHIBUYA109</b><small>道玄坂 2-29-1 · 官方位置資料</small></a>
+          </div>
+          <p class="sheet__legal">視覺方向參考寫實都市開放世界遊戲的電影感；本作品為原創 WebGL 場景，未使用 GTA 或《人中之龍》的遊戲資產、地圖、角色或商標。</p>
+        </div>
+      </section>
+
+      <div id="rotateHint" class="rotate-hint glass" aria-live="polite">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M4 8C2 11 3 15 6 17M20 8c2 3 1 7-2 9"/></svg>
+        <span><b>橫向畫面更有沉浸感</b><small>直向亦可遊玩；旋轉 iPad／手機可獲得更廣視野</small></span>
+      </div>
+
+      <div id="webglFallback" class="fallback" hidden>
+        <h1>此裝置未能啟動 3D 世界</h1>
+        <p>請使用較新的 Safari、Chrome 或 Edge，並確認已啟用硬件加速。</p>
+      </div>
+    </main>
+  </body>
+</html>
